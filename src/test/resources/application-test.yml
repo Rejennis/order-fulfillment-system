@@ -1,0 +1,38 @@
+# Test Configuration
+# This file is used when running tests with @SpringBootTest
+# It overrides settings from application.yml
+
+spring:
+  # Test datasource configuration
+  # These will be overridden by Testcontainers at runtime
+  datasource:
+    url: jdbc:postgresql://localhost:5432/testdb
+    username: test
+    password: test
+  
+  # JPA configuration for tests
+  jpa:
+    hibernate:
+      # Recreate schema for each test run
+      ddl-auto: create-drop
+    
+    # Disable SQL logging in tests to reduce noise
+    show-sql: false
+    
+    properties:
+      hibernate:
+        format_sql: false
+
+# Logging configuration for tests
+logging:
+  level:
+    root: WARN
+    com.midlevel.orderfulfillment: DEBUG
+    # Reduce Hibernate logs in tests
+    org.hibernate: WARN
+    # Reduce Testcontainers logs
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN
+
+# Disable server startup for repository tests
+spring.main.web-application-type: none

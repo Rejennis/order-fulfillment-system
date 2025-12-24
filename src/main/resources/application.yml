@@ -1,0 +1,86 @@
+# Spring Boot Configuration File (YAML format)
+# YAML is more readable than properties files for hierarchical configuration
+
+spring:
+  # Application name (used in logs, metrics, etc.)
+  application:
+    name: order-fulfillment-system
+  
+  # Database configuration
+  datasource:
+    # PostgreSQL connection URL
+    # Format: jdbc:postgresql://host:port/database
+    url: jdbc:postgresql://localhost:5432/orderfulfillment
+    username: postgres
+    password: postgres
+    
+    # HikariCP connection pool settings (HikariCP is the default in Spring Boot)
+    hikari:
+      # Maximum number of connections in the pool
+      maximum-pool-size: 10
+      # Minimum number of idle connections
+      minimum-idle: 5
+      # Maximum lifetime of a connection (30 minutes)
+      max-lifetime: 1800000
+      # Connection timeout (30 seconds)
+      connection-timeout: 30000
+  
+  # JPA/Hibernate configuration
+  jpa:
+    # Hibernate DDL mode
+    # - none: No schema management
+    # - validate: Validate schema, don't make changes
+    # - update: Update schema if needed (use cautiously in production)
+    # - create: Create schema, destroy previous data
+    # - create-drop: Create schema, drop when SessionFactory closes
+    hibernate:
+      ddl-auto: update
+    
+    # Show SQL queries in logs (useful for development, disable in production)
+    show-sql: true
+    
+    # Format SQL for readability in logs
+    properties:
+      hibernate:
+        format_sql: true
+        # Use newer generator mappings
+        id:
+          new_generator_mappings: true
+        # Batch inserts for better performance
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    
+    # Open EntityManager in View pattern (generally avoid this, prefer explicit transactions)
+    open-in-view: false
+
+# Logging configuration
+logging:
+  level:
+    # Root logging level
+    root: INFO
+    # Our application logs
+    com.midlevel.orderfulfillment: DEBUG
+    # SQL query logs (shows the SQL)
+    org.hibernate.SQL: DEBUG
+    # SQL parameter logs (shows the values bound to ?)
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    # Spring transaction logs (useful for debugging transaction boundaries)
+    org.springframework.transaction: DEBUG
+  
+  # Log pattern for console output
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Server configuration
+server:
+  # Port for the embedded Tomcat server
+  port: 8080
+  
+  # Error handling
+  error:
+    # Include exception message in error response (disable in production)
+    include-message: always
+    # Include stack trace in error response (disable in production)
+    include-stacktrace: on_param

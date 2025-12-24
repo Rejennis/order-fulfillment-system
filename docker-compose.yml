@@ -1,0 +1,83 @@
+# Docker Compose Configuration for Order Fulfillment System
+# This file defines the services needed for local development
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database Service
+  postgres:
+    # Official PostgreSQL image from Docker Hub
+    image: postgres:16-alpine
+    
+    # Container name for easy reference
+    container_name: orderfulfillment-postgres
+    
+    # Environment variables for PostgreSQL configuration
+    environment:
+      # Superuser credentials
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # Database to create on startup
+      POSTGRES_DB: orderfulfillment
+      # Performance tuning for development
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+    
+    # Port mapping (host:container)
+    # Maps port 5432 on host to port 5432 in container
+    ports:
+      - "5432:5432"
+    
+    # Volume for data persistence
+    # Data survives container restarts
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    
+    # Health check to ensure database is ready
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Resource limits (optional, but good practice)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # PgAdmin - Web-based PostgreSQL management tool (optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: orderfulfillment-pgadmin
+    
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@orderfulfillment.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    
+    ports:
+      - "5050:80"
+    
+    # Link to PostgreSQL service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    restart: unless-stopped
+
+# Named volumes for data persistence
+volumes:
+  postgres_data:
+    driver: local
+
+# Network configuration
+networks:
+  default:
+    name: orderfulfillment-network

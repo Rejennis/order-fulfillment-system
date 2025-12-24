@@ -61,6 +61,16 @@
     <dependencies>
         
         <!-- 
+            Spring Boot Starter Web
+            Includes: Spring MVC, RESTful services, embedded Tomcat
+            Everything needed for building web applications and REST APIs
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        
+        <!-- 
             Spring Boot Starter Data JPA
             Includes: Spring Data JPA, Hibernate ORM, Transaction Management
             This is everything needed for database access with JPA
@@ -99,6 +109,17 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
+        </dependency>
+        
+        <!-- 
+            Springdoc OpenAPI - API Documentation
+            Auto-generates OpenAPI 3.0 specification and Swagger UI
+            Access at http://localhost:8080/swagger-ui.html
+        -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.3.0</version>
         </dependency>
         
         <!-- 

@@ -33,9 +33,11 @@ import java.util.Optional;
 public class OrderService {
     
     private final OrderRepository orderRepository;
+    private final DomainEventPublisher eventPublisher;
     
-    public OrderService(OrderRepository orderRepository) {
+    public OrderService(OrderRepository orderRepository, DomainEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
+        this.eventPublisher = eventPublisher;
     }
     
     /**
@@ -43,12 +45,20 @@ public class OrderService {
      * 
      * Transaction management:
      * @Transactional ensures this operation is atomic - either fully succeeds or fully fails.
+     * 
+     * Event publishing happens AFTER the transaction commits successfully.
      */
     @Transactional  // Write operation - overrides read-only
     public Order createOrder(Order order) {
         // Domain validation already happened in Order.create()
         // Service just orchestrates the save operation
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        
+        // Publish domain events after successful save
+        // This happens AFTER transaction commit
+        eventPublisher.publishEvents(savedOrder);
+        
+        return savedOrder;
     }
     
     /**
@@ -80,6 +90,7 @@ public class OrderService {
      * 1. Load order from database
      * 2. Call domain method to transition state
      * 3. Save updated order
+     * 4. Publish events after transaction commits
      */
     @Transactional  // Write operation
     public Order markOrderAsPaid(String orderId) {
@@ -90,7 +101,12 @@ public class OrderService {
         order.pay();
         
         // Save the state change
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        
+        // Publish domain events
+        eventPublisher.publishEvents(savedOrder);
+        
+        return savedOrder;
     }
     
     /**
@@ -104,7 +120,12 @@ public class OrderService {
         // Domain method enforces business rules (must be paid first)
         order.ship();
         
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        
+        // Publish domain events
+        eventPublisher.publishEvents(savedOrder);
+        
+        return savedOrder;
     }
     
     /**
@@ -118,7 +139,12 @@ public class OrderService {
         // Domain method enforces business rules (can't cancel if shipped)
         order.cancel();
         
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        
+        // Publish domain events
+        eventPublisher.publishEvents(savedOrder);
+        
+        return savedOrder;
     }
     
     /**

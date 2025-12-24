@@ -1,5 +1,11 @@
 package com.midlevel.orderfulfillment.domain.model;
 
+import com.midlevel.orderfulfillment.domain.event.DomainEvent;
+import com.midlevel.orderfulfillment.domain.event.OrderCancelledEvent;
+import com.midlevel.orderfulfillment.domain.event.OrderCreatedEvent;
+import com.midlevel.orderfulfillment.domain.event.OrderPaidEvent;
+import com.midlevel.orderfulfillment.domain.event.OrderShippedEvent;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,6 +56,10 @@ public class Order {
     // When the order was shipped (null until shipping)
     private Instant shippedAt;
     
+    // Domain events that occurred during this request
+    // These will be published after the transaction commits
+    private final List<DomainEvent> domainEvents = new ArrayList<>();
+    
     /**
      * Private constructor to enforce factory method pattern.
      * This ensures all Order instances go through proper validation.
@@ -98,7 +108,15 @@ public class Order {
         Order order = new Order(orderId, customerId, items, shippingAddress);
         
         // Validate the total is greater than zero (Business Rule #2)
-        if (order.calculateTotal().isZero()) {
+        if (aise domain event: Order was created
+        order.registerEvent(new OrderCreatedEvent(
+                order.orderId,
+                order.customerId,
+                order.calculateTotal(),
+                order.items.size()
+        ));
+        
+        // Rorder.calculateTotal().isZero()) {
             throw new IllegalArgumentException("Order total must be greater than zero");
         }
         
@@ -160,8 +178,13 @@ public class Order {
         // Record payment timestamp
         this.paidAt = Instant.now();
         
-        // In a real system, we would emit a OrderPaidEvent here
-        // This would trigger notifications, inventory updates, etc.
+        // Raise domain event: Order was paid
+        registerEvent(new OrderPaidEvent(
+                this.orderId,
+                this.customerId,
+                this.calculateTotal(),
+                this.paidAt
+        ));
     }
     
     /**
@@ -190,10 +213,12 @@ public class Order {
         }
         
         // Transition to SHIPPED status
-        this.status = OrderStatus.SHIPPED;
-        
-        // Record shipping timestamp
-        this.shippedAt = Instant.now();
+        thiRaise domain event: Order was shipped
+        registerEvent(new OrderShippedEvent(
+                this.orderId,
+                this.customerId,
+                this.shippedAt
+        ));
         
         // In a real system, we would:
         // - Emit OrderShippedEvent
@@ -232,11 +257,12 @@ public class Order {
         }
         
         // Transition to CANCELLED status
-        this.status = OrderStatus.CANCELLED;
-        
-        // In a real system, we would:
-        // - Emit OrderCancelledEvent
-        // - Process refund if already paid
+        thiRaise domain event: Order was cancelled
+        registerEvent(new OrderCancelledEvent(
+                this.orderId,
+                this.customerId,
+                "User requested cancellation"
+        ));if already paid
         // - Release inventory back to stock
         // - Notify customer
     }
@@ -339,5 +365,33 @@ public class Order {
                 ", total=" + calculateTotal() +
                 ", createdAt=" + createdAt +
                 '}';
+    }
+    
+    // ==================== Domain Events Management ====================
+    
+    /**
+     * Register a domain event to be published after transaction commit.
+     * Events are stored internally and cleared after publishing.
+     */
+    private void registerEvent(DomainEvent event) {
+        this.domainEvents.add(event);
+    }
+    
+    /**
+     * Get all domain events that occurred during this request.
+     * Used by the infrastructure layer to publish events.
+     * 
+     * @return unmodifiable list of domain events
+     */
+    public List<DomainEvent> getDomainEvents() {
+        return Collections.unmodifiableList(domainEvents);
+    }
+    
+    /**
+     * Clear all domain events after they've been published.
+     * This prevents events from being published multiple times.
+     */
+    public void clearDomainEvents() {
+        this.domainEvents.clear();
     }
 }

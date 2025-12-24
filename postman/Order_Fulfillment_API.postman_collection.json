@@ -1,0 +1,441 @@
+{
+  "info": {
+    "name": "Order Fulfillment System API",
+    "description": "RESTful API for managing order lifecycle (Create, Pay, Ship, Cancel)",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerId",
+      "value": "CUST-123",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Order Management",
+      "item": [
+        {
+          "name": "Create Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Save orderId for subsequent requests",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('orderId', response.orderId);",
+                  "    pm.test('Order created successfully', function() {",
+                  "        pm.expect(response.status).to.eql('CREATED');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"shippingAddress\": {\n    \"street\": \"123 Main Street\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"zipCode\": \"10001\",\n    \"country\": \"US\"\n  },\n  \"items\": [\n    {\n      \"productId\": \"PROD-001\",\n      \"productName\": \"Wireless Headphones\",\n      \"unitPrice\": {\n        \"amount\": 99.99,\n        \"currency\": \"USD\"\n      },\n      \"quantity\": 2\n    },\n    {\n      \"productId\": \"PROD-002\",\n      \"productName\": \"USB-C Cable\",\n      \"unitPrice\": {\n        \"amount\": 15.99,\n        \"currency\": \"USD\"\n      },\n      \"quantity\": 3\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders"]
+            },
+            "description": "Create a new order with customer details and line items. Returns 201 Created with order details."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has orderId', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.orderId).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{orderId}}"]
+            },
+            "description": "Retrieve order details by order ID. Returns 200 OK with order data, or 404 Not Found if order doesn't exist."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Orders by Customer ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders?customerId={{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders"],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customerId}}"
+                }
+              ]
+            },
+            "description": "Get all orders for a specific customer. Returns array of orders."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "all"]
+            },
+            "description": "Retrieve all orders in the system. ⚠️ Use with caution - could return large dataset. In production, this should be paginated."
+          },
+          "response": []
+        }
+      ],
+      "description": "CRUD operations for order management"
+    },
+    {
+      "name": "Order Operations",
+      "item": [
+        {
+          "name": "Mark Order as Paid",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order marked as paid', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.be.oneOf(['PAID', 'SHIPPED']);",
+                  "    pm.expect(response.paidAt).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/pay",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{orderId}}", "pay"]
+            },
+            "description": "Mark an order as paid. \n\n**Idempotent:** Calling this multiple times on the same order will succeed without error. If order is already PAID or SHIPPED, returns current state.\n\n**Business Rules:**\n- Order must exist (404 if not found)\n- Order must be in CREATED state or already PAID/SHIPPED\n- Cannot pay CANCELLED orders (400 Bad Request)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Order as Shipped",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order marked as shipped', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.eql('SHIPPED');",
+                  "    pm.expect(response.shippedAt).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/ship",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{orderId}}", "ship"]
+            },
+            "description": "Mark an order as shipped.\n\n**Business Rules:**\n- Order must exist (404 if not found)\n- Order must be PAID first (400 Bad Request if not)\n- Cannot ship CANCELLED orders (400 Bad Request)\n- SHIPPED is a terminal state (cannot transition from here)"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Order cancelled', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.eql('CANCELLED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{orderId}}", "cancel"]
+            },
+            "description": "Cancel an order.\n\n**Business Rules:**\n- Order must exist (404 if not found)\n- Can cancel CREATED or PAID orders\n- Cannot cancel SHIPPED orders (400 Bad Request)\n- CANCELLED is a terminal state"
+          },
+          "response": []
+        }
+      ],
+      "description": "State transition operations for order lifecycle"
+    },
+    {
+      "name": "Test Scenarios",
+      "item": [
+        {
+          "name": "Happy Path - Full Order Flow",
+          "item": [
+            {
+              "name": "1. Create Order",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.collectionVariables.set('orderId', response.orderId);",
+                      "pm.test('Order created', () => pm.expect(response.status).to.eql('CREATED'));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"customerId\": \"CUST-HAPPY\",\n  \"shippingAddress\": {\n    \"street\": \"456 Success Ave\",\n    \"city\": \"Boston\",\n    \"state\": \"MA\",\n    \"zipCode\": \"02101\",\n    \"country\": \"US\"\n  },\n  \"items\": [\n    {\n      \"productId\": \"PROD-HAPPY\",\n      \"productName\": \"Happy Product\",\n      \"unitPrice\": {\"amount\": 100.00, \"currency\": \"USD\"},\n      \"quantity\": 1\n    }\n  ]\n}"
+                },
+                "url": {"raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"]}
+              },
+              "response": []
+            },
+            {
+              "name": "2. Pay Order",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": ["pm.test('Order paid', () => pm.expect(pm.response.json().status).to.eql('PAID'));"],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/orders/{{orderId}}/pay", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "pay"]}
+              },
+              "response": []
+            },
+            {
+              "name": "3. Ship Order",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": ["pm.test('Order shipped', () => pm.expect(pm.response.json().status).to.eql('SHIPPED'));"],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/orders/{{orderId}}/ship", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "ship"]}
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Idempotency Test - Duplicate Payment",
+          "item": [
+            {
+              "name": "1. Create Order",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const response = pm.response.json();",
+                      "pm.collectionVariables.set('orderId', response.orderId);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"customerId\": \"CUST-IDEM\",\n  \"shippingAddress\": {\n    \"street\": \"789 Retry Rd\",\n    \"city\": \"Seattle\",\n    \"state\": \"WA\",\n    \"zipCode\": \"98101\",\n    \"country\": \"US\"\n  },\n  \"items\": [\n    {\n      \"productId\": \"PROD-IDEM\",\n      \"productName\": \"Idempotent Product\",\n      \"unitPrice\": {\"amount\": 50.00, \"currency\": \"USD\"},\n      \"quantity\": 1\n    }\n  ]\n}"
+                },
+                "url": {"raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"]}
+              },
+              "response": []
+            },
+            {
+              "name": "2. Pay Order (First Time)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/orders/{{orderId}}/pay", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "pay"]}
+              },
+              "response": []
+            },
+            {
+              "name": "3. Pay Order (Second Time - Should Succeed)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Duplicate payment succeeds (idempotent)', function() {",
+                      "    pm.response.to.have.status(200);",
+                      "    pm.expect(pm.response.json().status).to.be.oneOf(['PAID', 'SHIPPED']);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/orders/{{orderId}}/pay", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "pay"]}
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Error Scenarios",
+          "item": [
+            {
+              "name": "Ship Unpaid Order (Should Fail)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Cannot ship unpaid order', function() {",
+                      "    pm.response.to.have.status(400);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "// Create fresh order for this test",
+                      "const createOrder = {",
+                      "  url: pm.collectionVariables.get('baseUrl') + '/api/orders',",
+                      "  method: 'POST',",
+                      "  header: {'Content-Type': 'application/json'},",
+                      "  body: {",
+                      "    mode: 'raw',",
+                      "    raw: JSON.stringify({",
+                      "      customerId: 'CUST-ERR',",
+                      "      shippingAddress: { street: '1 Error St', city: 'City', state: 'ST', zipCode: '00000', country: 'US' },",
+                      "      items: [{ productId: 'ERR', productName: 'Test', unitPrice: {amount: 10, currency: 'USD'}, quantity: 1 }]",
+                      "    })",
+                      "  }",
+                      "};",
+                      "",
+                      "pm.sendRequest(createOrder, (err, res) => {",
+                      "  pm.collectionVariables.set('orderId', res.json().orderId);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/orders/{{orderId}}/ship", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "ship"]}
+              },
+              "response": []
+            },
+            {
+              "name": "Get Non-Existent Order (Should 404)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Non-existent order returns 404', function() {",
+                      "    pm.response.to.have.status(404);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {"raw": "{{baseUrl}}/api/orders/NON-EXISTENT-ID", "host": ["{{baseUrl}}"], "path": ["api", "orders", "NON-EXISTENT-ID"]}
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

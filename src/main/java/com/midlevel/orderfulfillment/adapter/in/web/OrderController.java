@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
 /**
  * REST API Controller for Order operations.
  * 
+ * IMPLEMENTATION TIMELINE:
+ * - Implemented in Day 3 (Should have been Day 5: REST API & HTTP Semantics)
+ * 
  * Hexagonal Architecture (Ports & Adapters):
  * This is an "inbound adapter" (driving adapter) that:
  * - Receives HTTP requests from clients

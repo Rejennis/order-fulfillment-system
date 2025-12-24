@@ -6,6 +6,9 @@ import org.springframework.scheduling.annotation.EnableAsync;
 /**
  * Configuration for asynchronous event processing.
  * 
+ * IMPLEMENTATION TIMELINE:
+ * - Implemented in Day 4 (Actually Day 7: Domain Events in mentor program)
+ * 
  * @EnableAsync allows @Async methods to run in separate threads.
  * 
  * Benefits:

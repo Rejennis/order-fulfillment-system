@@ -16,6 +16,11 @@ import java.util.UUID;
 /**
  * Order is the main Aggregate Root in our domain.
  * 
+ * IMPLEMENTATION TIMELINE:
+ * - Core aggregate logic: Implemented in Day 1 (Correct - Day 1: Domain Modeling)
+ * - State transitions (create, pay, ship, cancel): Implemented in Day 1 (Should have been Day 4)
+ * - Domain event registration: Added in Day 4 (Actually Day 7 in mentor program)
+ * 
  * DDD Aggregate Root responsibilities:
  * - Enforces business invariants (rules that must always be true)
  * - Controls state transitions via methods (not direct field access)
@@ -58,6 +63,7 @@ public class Order {
     
     // Domain events that occurred during this request
     // These will be published after the transaction commits
+    // Added in Day 4 (Actually Day 7: Domain Events in mentor program)
     private final List<DomainEvent> domainEvents = new ArrayList<>();
     
     /**
@@ -368,6 +374,7 @@ public class Order {
     }
     
     // ==================== Domain Events Management ====================
+    // Added in Day 4 (Actually Day 7: Domain Events in mentor program)
     
     /**
      * Register a domain event to be published after transaction commit.

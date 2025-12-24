@@ -11,6 +11,10 @@ import java.util.Optional;
 /**
  * Application Service for orchestrating Order operations.
  * 
+ * IMPLEMENTATION TIMELINE:
+ * - Basic CRUD operations: Implemented in Day 3 (Should have been Day 5: REST API)
+ * - Event publishing integration: Added in Day 4 (Actually Day 7: Domain Events)
+ * 
  * What is an Application Service?
  * - Sits between Controllers (adapters) and Domain (core business logic)
  * - Orchestrates domain operations and coordinates workflows
@@ -86,16 +90,33 @@ public class OrderService {
     /**
      * Mark an order as paid.
      * 
+     * Idempotency: Calling this method multiple times with the same orderId
+     * will not cause errors. If the order is already paid, we return it successfully.
+     * 
+     * Why idempotent?
+     * - Network retries might call this twice
+     * - Payment gateway webhooks might duplicate
+     * - Prevents "already paid" errors from breaking flows
+     * 
      * Workflow:
      * 1. Load order from database
-     * 2. Call domain method to transition state
-     * 3. Save updated order
-     * 4. Publish events after transaction commits
+     * 2. Check if already paid (idempotency check)
+     * 3. If already paid: return order without error
+     * 4. If not paid: call domain method to transition state
+     * 5. Save updated order
+     * 6. Publish events after transaction commits
      */
     @Transactional  // Write operation
     public Order markOrderAsPaid(String orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+        
+        // Idempotency check: if already paid, return successfully without error
+        if (order.getStatus() == OrderStatus.PAID || 
+            order.getStatus() == OrderStatus.SHIPPED) {
+            // Already in paid or later state - idempotent success
+            return order;
+        }
         
         // Domain method enforces business rules
         order.pay();

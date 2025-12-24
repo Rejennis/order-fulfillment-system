@@ -5,6 +5,9 @@ import java.time.Instant;
 /**
  * Base class for all domain events.
  * 
+ * IMPLEMENTATION TIMELINE:
+ * - Implemented in Day 4 (Actually Day 7: Domain Events in mentor program)
+ * 
  * Domain Events represent something that happened in the domain that domain experts care about.
  * They are named in past tense (OrderCreated, not CreateOrder) because they represent facts.
  * 

@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 /**
  * Service responsible for publishing domain events to Spring's event system.
  * 
+ * IMPLEMENTATION TIMELINE:
+ * - Implemented in Day 4 (Actually Day 7: Domain Events in mentor program)
+ * 
  * This bridges the gap between:
  * - Domain layer (which shouldn't depend on Spring)
  * - Infrastructure layer (Spring ApplicationEventPublisher)

@@ -245,6 +245,52 @@
             <version>7.4</version>
         </dependency>
         
+        <!-- 
+            ========================================
+            ERROR HANDLING & RESILIENCE (DAY 11)
+            ========================================
+        -->
+        
+        <!-- 
+            Spring Retry - Automatic retry for transient failures
+            Provides @Retryable annotation for declarative retries
+            Useful for database connection failures, network timeouts, etc.
+        -->
+        <dependency>
+            <groupId>org.springframework.retry</groupId>
+            <artifactId>spring-retry</artifactId>
+        </dependency>
+        
+        <!-- 
+            Spring AOP - Required by Spring Retry
+            Provides aspect-oriented programming support for @Retryable
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        
+        <!-- 
+            Resilience4j Circuit Breaker - Fault tolerance library
+            Provides circuit breaker pattern to prevent cascade failures
+            Protects services from repeated failures to external dependencies
+        -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+        
+        <!-- 
+            Resilience4j Micrometer Integration
+            Exports circuit breaker metrics to Micrometer for monitoring
+        -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-micrometer</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+        
     </dependencies>
 
     <!-- 

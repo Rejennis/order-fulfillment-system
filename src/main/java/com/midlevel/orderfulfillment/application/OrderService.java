@@ -7,6 +7,10 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,8 +83,19 @@ public class OrderService {
      * - Logs order creation with structured data
      * - Records metrics (counter + timer)
      * - Includes correlation ID in logs (from MDC)
+     * 
+     * Resilience (Day 11):
+     * - @Retryable: Automatically retries on transient database failures
+     * - Retry strategy: 3 attempts with exponential backoff (1s, 2s, 4s)
+     * - Only retries DataAccessException (connection issues, optimistic locking conflicts)
+     * - Does NOT retry business rule violations (those fail immediately)
      */
     @Transactional  // Write operation - overrides read-only
+    @Retryable(
+        retryFor = DataAccessException.class,
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 1000, multiplier = 2)
+    )
     public Order createOrder(Order order) {
         log.info("Creating order for customer: {}, items: {}", 
                 order.getCustomerId(), order.getItems().size());
@@ -107,6 +122,37 @@ public class OrderService {
                 throw e;
             }
         });
+    }
+    
+    /**
+     * Recovery method for createOrder when all retries are exhausted.
+     * 
+     * This method is called automatically by Spring Retry after all retry attempts fail.
+     * It provides a fallback behavior instead of propagating the exception to the caller.
+     * 
+     * Method signature rules:
+     * - Must have same return type as the retryable method
+     * - Must have same parameters PLUS the exception as last parameter
+     * - Can have fewer parameters than original if exception is included
+     * 
+     * @param order The order that failed to be created
+     * @param e The exception that caused all retries to fail
+     * @return null to indicate failure (caller must check for null)
+     */
+    @Recover
+    public Order recoverFromCreateOrder(DataAccessException e, Order order) {
+        log.error("All retry attempts exhausted for order creation. Customer: {}, Error: {}", 
+                order.getCustomerId(), e.getMessage());
+        orderFailuresCounter.increment();
+        
+        // In production, you might:
+        // 1. Store the order in a "pending" table for manual processing
+        // 2. Send alert to operations team
+        // 3. Return a specific error object instead of null
+        // 4. Publish a "OrderCreationFailed" event
+        
+        // For now, rethrow to let GlobalExceptionHandler format the error response
+        throw new RuntimeException("Order creation failed after multiple attempts: " + e.getMessage(), e);
     }
     
     /**
@@ -149,8 +195,16 @@ public class OrderService {
      * 4. If not paid: call domain method to transition state
      * 5. Save updated order
      * 6. Publish events after transaction commits
+     * 
+     * Resilience (Day 11):
+     * - @Retryable handles transient database failures
      */
     @Transactional  // Write operation
+    @Retryable(
+        retryFor = DataAccessException.class,
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 1000, multiplier = 2)
+    )
     public Order markOrderAsPaid(String orderId) {
         log.info("Marking order as paid: orderId={}", orderId);
         
@@ -190,8 +244,16 @@ public class OrderService {
     
     /**
      * Mark an order as shipped.
+     * 
+     * Resilience (Day 11):
+     * - @Retryable handles transient database failures
      */
     @Transactional  // Write operation
+    @Retryable(
+        retryFor = DataAccessException.class,
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 1000, multiplier = 2)
+    )
     public Order markOrderAsShipped(String orderId) {
         log.info("Marking order as shipped: orderId={}", orderId);
         
@@ -222,8 +284,16 @@ public class OrderService {
     
     /**
      * Cancel an order.
+     * 
+     * Resilience (Day 11):
+     * - @Retryable handles transient database failures
      */
     @Transactional  // Write operation
+    @Retryable(
+        retryFor = DataAccessException.class,
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 1000, multiplier = 2)
+    )
     public Order cancelOrder(String orderId) {
         log.info("Cancelling order: orderId={}", orderId);
         

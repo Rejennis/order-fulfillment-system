@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    SpotBugs Exclude Filter
+    Excludes certain files and bug patterns from analysis
+    Customize as needed for your project
+-->
+<FindBugsFilter>
+    
+    <!-- Exclude generated code -->
+    <Match>
+        <Class name="~.*\.generated\..*"/>
+    </Match>
+    
+    <!-- Exclude target directory (build outputs) -->
+    <Match>
+        <Class name="~.*\.target\..*"/>
+    </Match>
+    
+    <!-- Exclude test code from certain checks -->
+    <Match>
+        <Class name="~.*Test$"/>
+        <!-- Allow assertions with side effects in tests -->
+        <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+    </Match>
+    
+    <!-- Exclude DTOs from serialization warnings (we use Jackson for JSON) -->
+    <Match>
+        <Class name="~.*\.dto\..*"/>
+        <Bug pattern="SE_NO_SERIALVERSIONID"/>
+    </Match>
+    
+    <!-- Exclude domain models from serialization warnings -->
+    <Match>
+        <Class name="~.*\.domain\.model\..*"/>
+        <Bug pattern="SE_NO_SERIALVERSIONID"/>
+    </Match>
+    
+    <!-- Allow Spring beans to have non-static fields (dependency injection) -->
+    <Match>
+        <Class name="~.*Controller$"/>
+        <Bug pattern="MS_CANNOT_BE_FINAL"/>
+    </Match>
+    
+    <Match>
+        <Class name="~.*Service$"/>
+        <Bug pattern="MS_CANNOT_BE_FINAL"/>
+    </Match>
+    
+    <!-- Configuration classes can have non-final fields -->
+    <Match>
+        <Class name="~.*Configuration$"/>
+        <Bug pattern="MS_CANNOT_BE_FINAL"/>
+    </Match>
+    
+</FindBugsFilter>

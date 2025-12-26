@@ -1,0 +1,59 @@
+# .dockerignore - Exclude files from Docker build context
+# This speeds up builds and reduces image size
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Build outputs
+target/
+build/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Documentation (not needed in container)
+*.md
+docs/
+
+# Test data
+*.log
+logs/
+
+# Docker files (no recursion)
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# CI/CD
+.github/
+
+# Maven wrapper (copied explicitly in Dockerfile)
+.mvn/wrapper/maven-wrapper.jar
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Postman collections (for API testing)
+postman/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~

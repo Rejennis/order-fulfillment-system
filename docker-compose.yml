@@ -1,7 +1,76 @@
 # Docker Compose Configuration for Order Fulfillment System
-# This file defines the services needed for local development
+# This file defines the services needed for local development and production-like deployment
+# Day 13 Update: Added application service for full stack deployment
 
 version: '3.8'
+
+services:
+  # Order Fulfillment Application Service (Day 13)
+  app:
+    # Build from Dockerfile in current directory
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    # Image name for the built container
+    image: order-fulfillment-system:latest
+    
+    container_name: orderfulfillment-app
+    
+    # Application port mapping
+    ports:
+      - "8080:8080"
+    
+    # Environment variables for application configuration
+    environment:
+      # Spring Profile (dev for local, prod for production)
+      SPRING_PROFILES_ACTIVE: dev
+      
+      # Database connection (use service name as hostname)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/orderfulfillment
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      
+      # Kafka connection
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      
+      # JWT Secret (use strong secret in production)
+      JWT_SECRET: docker-compose-development-secret-key-change-in-production
+      JWT_EXPIRATION_MS: 86400000
+      
+      # JVM Options
+      JAVA_OPTS: >-
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
+        -Djava.security.egd=file:/dev/./urandom
+    
+    # Wait for dependencies to be healthy before starting
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    
+    # Health check for the application
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '1.0'
+          memory: 512M
 
 services:
   # PostgreSQL Database Service

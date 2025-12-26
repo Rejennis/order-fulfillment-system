@@ -375,6 +375,75 @@
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
             
+            <!-- 
+                SpotBugs Maven Plugin (Day 13)
+                Static analysis tool for finding bugs in Java code
+                Detects: null pointer dereferences, infinite loops, bad practices, etc.
+                Run with: mvn spotbugs:check
+            -->
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>4.8.3.0</version>
+                <configuration>
+                    <!-- Fail build on high priority bugs -->
+                    <effort>Max</effort>
+                    <threshold>Medium</threshold>
+                    <xmlOutput>true</xmlOutput>
+                    <failOnError>false</failOnError>
+                    <!-- Exclude generated code and test resources -->
+                    <excludeFilterFile>${project.basedir}/spotbugs-exclude.xml</excludeFilterFile>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <!-- SpotBugs itself -->
+                    <dependency>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs</artifactId>
+                        <version>4.8.3</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            
+            <!-- 
+                Checkstyle Maven Plugin (Day 13)
+                Enforces coding standards and best practices
+                Checks: naming conventions, javadoc, imports, etc.
+                Run with: mvn checkstyle:check
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <configLocation>google_checks.xml</configLocation>
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>false</failsOnError>
+                    <failOnViolation>false</failOnViolation>
+                    <violationSeverity>warning</violationSeverity>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>10.12.7</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            
         </plugins>
     </build>
 

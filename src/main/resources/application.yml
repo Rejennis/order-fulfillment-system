@@ -1,6 +1,13 @@
 # Spring Boot Configuration File (YAML format)
 # YAML is more readable than properties files for hierarchical configuration
 
+# Application configuration
+events:
+  # Event publisher type: "spring" (in-memory) or "kafka" (persistent)
+  # spring: Fast, simple, monolith-friendly, no durability
+  # kafka: Durable, scalable, microservices-ready, more complex
+  publisher: kafka
+
 spring:
   # Application name (used in logs, metrics, etc.)
   application:
@@ -54,6 +61,66 @@ spring:
     
     # Open EntityManager in View pattern (generally avoid this, prefer explicit transactions)
     open-in-view: false
+  
+  # Kafka configuration
+  kafka:
+    # Bootstrap servers - initial connection to Kafka cluster
+    bootstrap-servers: localhost:9092
+    
+    # Producer configuration
+    producer:
+      # Serializers for key and value
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      
+      # Acknowledgment configuration
+      # acks=all means all replicas must acknowledge (strongest durability)
+      acks: all
+      
+      # Retry configuration
+      retries: 3
+      retry-backoff-ms: 1000
+      
+      # Idempotence - ensures exactly-once semantics
+      enable-idempotence: true
+      
+      # Compression for network efficiency
+      compression-type: snappy
+      
+      # Additional properties
+      properties:
+        # Include type information in JSON
+        spring.json.add.type.headers: false
+    
+    # Consumer configuration
+    consumer:
+      # Consumer group ID - all consumers with same group ID share partitions
+      group-id: order-fulfillment-service
+      
+      # Deserializers for key and value
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      
+      # Auto offset reset - what to do when no initial offset
+      # earliest: start from beginning
+      # latest: start from latest (skip old messages)
+      auto-offset-reset: earliest
+      
+      # Manual commit for exactly-once semantics
+      enable-auto-commit: false
+      
+      # Max poll records - batch size
+      max-poll-records: 100
+      
+      # Additional properties
+      properties:
+        # Trust all packages for deserialization (be careful in production)
+        spring.json.trusted.packages: "*"
+    
+    # Admin configuration for topic creation
+    admin:
+      properties:
+        bootstrap.servers: localhost:9092
 
 # Logging configuration
 logging:
@@ -68,6 +135,9 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     # Spring transaction logs (useful for debugging transaction boundaries)
     org.springframework.transaction: DEBUG
+    # Kafka logs
+    org.apache.kafka: INFO
+    org.springframework.kafka: INFO
   
   # Log pattern for console output
   pattern:

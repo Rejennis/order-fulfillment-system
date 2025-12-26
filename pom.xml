@@ -123,6 +123,16 @@
         </dependency>
         
         <!-- 
+            Spring Kafka - Event Streaming
+            Provides KafkaTemplate for producing and @KafkaListener for consuming
+            Includes Apache Kafka client libraries
+        -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+        
+        <!-- 
             Spring Boot Starter Test
             Includes: JUnit 5, Mockito, AssertJ, Spring Test, and more
             Everything needed for testing Spring Boot applications
@@ -130,6 +140,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- 
+            Spring Kafka Test - Testing support for Kafka
+            Includes embedded Kafka server for integration tests
+        -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka-test</artifactId>
             <scope>test</scope>
         </dependency>
         

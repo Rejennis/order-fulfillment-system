@@ -139,9 +139,69 @@ logging:
     org.apache.kafka: INFO
     org.springframework.kafka: INFO
   
-  # Log pattern for console output
+  # Log pattern for console output (will be overridden by JSON in production)
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator configuration (Day 10 - Observability)
+management:
+  endpoints:
+    web:
+      exposure:
+        # Expose all actuator endpoints (be selective in production)
+        include: health,info,metrics,prometheus,env,loggers,threaddump,heapdump
+      base-path: /actuator
+  
+  endpoint:
+    health:
+      # Show detailed health information
+      show-details: always
+      # Include components like database, disk space, etc.
+      show-components: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  
+  # Metrics configuration
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      # Add application name to all metrics
+      application: ${spring.application.name}
+    distribution:
+      # Percentiles for histogram metrics
+      percentiles-histogram:
+        http.server.requests: true
+      # SLA buckets for histogram metrics
+      slo:
+        http.server.requests: 50ms,100ms,200ms,500ms,1s,2s
+  
+  # Tracing configuration (correlation IDs)
+  tracing:
+    sampling:
+      probability: 1.0  # Sample 100% of requests (reduce in production)
+  
+  # Health indicators
+  health:
+    defaults:
+      enabled: true
+    db:
+      enabled: true
+    diskspace:
+      enabled: true
+      threshold: 10MB
+
+# Application info (visible in /actuator/info)
+info:
+  app:
+    name: ${spring.application.name}
+    description: Order Fulfillment System - Mid-Level Java Training Project
+    version: 1.0-SNAPSHOT
+    java:
+      version: ${java.version}
 
 # Server configuration
 server:

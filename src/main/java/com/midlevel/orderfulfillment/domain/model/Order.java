@@ -61,6 +61,9 @@ public class Order {
     // When the order was shipped (null until shipping)
     private Instant shippedAt;
     
+    // When the order was cancelled (null unless cancelled)
+    private Instant cancelledAt;
+    
     // Domain events that occurred during this request
     // These will be published after the transaction commits
     // Added in Day 4 (Actually Day 7: Domain Events in mentor program)
@@ -114,17 +117,17 @@ public class Order {
         Order order = new Order(orderId, customerId, items, shippingAddress);
         
         // Validate the total is greater than zero (Business Rule #2)
-        if (aise domain event: Order was created
+        if (order.calculateTotal().isZero()) {
+            throw new IllegalArgumentException("Order total must be greater than zero");
+        }
+        
+        // Raise domain event: Order was created
         order.registerEvent(new OrderCreatedEvent(
                 order.orderId,
                 order.customerId,
                 order.calculateTotal(),
                 order.items.size()
         ));
-        
-        // Rorder.calculateTotal().isZero()) {
-            throw new IllegalArgumentException("Order total must be greater than zero");
-        }
         
         // Return the validated order
         return order;
@@ -146,6 +149,22 @@ public class Order {
         }
         
         return total;
+    }
+    
+    /**
+     * Alias for calculateTotal() for backward compatibility.
+     * @return the total order amount
+     */
+    public Money getTotalAmount() {
+        return calculateTotal();
+    }
+    
+    /**
+     * Alias for getOrderId() for backward compatibility.
+     * @return the order ID
+     */
+    public String getId() {
+        return getOrderId();
     }
     
     /**
@@ -219,7 +238,10 @@ public class Order {
         }
         
         // Transition to SHIPPED status
-        thiRaise domain event: Order was shipped
+        this.status = OrderStatus.SHIPPED;
+        this.shippedAt = Instant.now();
+        
+        // Raise domain event: Order was shipped
         registerEvent(new OrderShippedEvent(
                 this.orderId,
                 this.customerId,
@@ -263,12 +285,18 @@ public class Order {
         }
         
         // Transition to CANCELLED status
-        thiRaise domain event: Order was cancelled
+        this.status = OrderStatus.CANCELLED;
+        this.cancelledAt = Instant.now();
+        
+        // Raise domain event: Order was cancelled
         registerEvent(new OrderCancelledEvent(
                 this.orderId,
                 this.customerId,
                 "User requested cancellation"
-        ));if already paid
+        ));
+        
+        // In a real system, we would:
+        // - Refund payment if already paid
         // - Release inventory back to stock
         // - Notify customer
     }

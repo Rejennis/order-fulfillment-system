@@ -79,6 +79,18 @@ public final class OrderItem {
     }
     
     /**
+     * Factory method alias for of() for backward compatibility.
+     * @param productId the product identifier
+     * @param productName the product name
+     * @param unitPrice the price per unit
+     * @param quantity the quantity ordered
+     * @return a new OrderItem instance
+     */
+    public static OrderItem create(String productId, String productName, Money unitPrice, int quantity) {
+        return of(productId, productName, unitPrice, quantity);
+    }
+    
+    /**
      * Calculates the total price for this line item.
      * Formula: unitPrice * quantity
      * 

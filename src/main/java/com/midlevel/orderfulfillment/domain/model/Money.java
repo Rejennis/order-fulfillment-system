@@ -163,8 +163,32 @@ public final class Money {
         return amount;
     }
     
+    /**
+     * Record-style accessor for amount.
+     * @return the monetary amount
+     */
+    public BigDecimal amount() {
+        return amount;
+    }
+    
     public Currency getCurrency() {
         return currency;
+    }
+    
+    /**
+     * Record-style accessor for currency.
+     * @return the currency
+     */
+    public Currency currency() {
+        return currency;
+    }
+    
+    /**
+     * Get the currency code as a string.
+     * @return the ISO 4217 currency code
+     */
+    public String getCurrencyCode() {
+        return currency.getCurrencyCode();
     }
     
     /**

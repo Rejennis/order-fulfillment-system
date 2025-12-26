@@ -121,13 +121,13 @@ public class OrderDtoMapper {
      * Convert MoneyDto to domain Money.
      */
     private Money toMoney(MoneyDto dto) {
-        return new Money(dto.amount(), dto.currency());
+        return Money.of(dto.amount(), dto.currency());
     }
     
     /**
      * Convert domain Money to MoneyDto.
      */
     private MoneyDto toMoneyDto(Money money) {
-        return new MoneyDto(money.amount(), money.currency());
+        return new MoneyDto(money.amount(), money.currency().getCurrencyCode());
     }
 }

@@ -16,9 +16,10 @@ public final class Address {
     private final String country;       // Country code (e.g., "US", "CA")
     
     /**
-     * Private constructor to enforce factory method pattern.
+     * Public constructor for creating Address instances.
+     * Use the of() factory method for validation.
      */
-    private Address(String street, String city, String state, String postalCode, String country) {
+    public Address(String street, String city, String state, String postalCode, String country) {
         this.street = street;
         this.city = city;
         this.state = state;
@@ -131,6 +132,54 @@ public final class Address {
     
     public String getPostalCode() {
         return postalCode;
+    }
+    
+    /**
+     * Alias for getPostalCode() for backward compatibility.
+     * @return the postal/ZIP code
+     */
+    public String getZipCode() {
+        return postalCode;
+    }
+    
+    /**
+     * Alias for getPostalCode() for backward compatibility.
+     * @return the postal/ZIP code
+     */
+    public String zipCode() {
+        return postalCode;
+    }
+    
+    /**
+     * Accessor for street (record-style).
+     * @return the street address
+     */
+    public String street() {
+        return street;
+    }
+    
+    /**
+     * Accessor for city (record-style).
+     * @return the city
+     */
+    public String city() {
+        return city;
+    }
+    
+    /**
+     * Accessor for state (record-style).
+     * @return the state
+     */
+    public String state() {
+        return state;
+    }
+    
+    /**
+     * Accessor for country (record-style).
+     * @return the country
+     */
+    public String country() {
+        return country;
     }
     
     public String getCountry() {

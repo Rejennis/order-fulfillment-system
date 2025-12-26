@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -49,6 +51,8 @@ import java.util.stream.Collectors;
 @Tag(name = "Orders", description = "Order management API")
 public class OrderController {
     
+    private static final Logger log = LoggerFactory.getLogger(OrderController.class);
+    
     private final OrderService orderService;
     private final OrderDtoMapper mapper;
     
@@ -74,6 +78,9 @@ public class OrderController {
     public ResponseEntity<OrderResponse> createOrder(
             @Valid @RequestBody CreateOrderRequest request) {
         
+        log.info("Received create order request: customerId={}, itemCount={}", 
+                request.customerId(), request.items() != null ? request.items().size() : 0);
+        
         // Convert DTO to domain model
         Order order = mapper.toDomain(request);
         
@@ -82,6 +89,9 @@ public class OrderController {
         
         // Convert domain model to response DTO
         OrderResponse response = mapper.toResponse(savedOrder);
+        
+        log.info("Order created successfully: orderId={}, status={}", 
+                savedOrder.getOrderId(), savedOrder.getStatus());
         
         // Return 201 Created with the created order
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -164,7 +174,10 @@ public class OrderController {
     public ResponseEntity<OrderResponse> payOrder(
             @Parameter(description = "Order ID") @PathVariable String orderId) {
         
+        log.info("Received pay order request: orderId={}", orderId);
         Order paidOrder = orderService.markOrderAsPaid(orderId);
+        log.info("Order payment processed: orderId={}, status={}", orderId, paidOrder.getStatus());
+        
         return ResponseEntity.ok(mapper.toResponse(paidOrder));
     }
     
@@ -184,7 +197,10 @@ public class OrderController {
     public ResponseEntity<OrderResponse> shipOrder(
             @Parameter(description = "Order ID") @PathVariable String orderId) {
         
+        log.info("Received ship order request: orderId={}", orderId);
         Order shippedOrder = orderService.markOrderAsShipped(orderId);
+        log.info("Order shipping processed: orderId={}, status={}", orderId, shippedOrder.getStatus());
+        
         return ResponseEntity.ok(mapper.toResponse(shippedOrder));
     }
     
@@ -204,7 +220,10 @@ public class OrderController {
     public ResponseEntity<OrderResponse> cancelOrder(
             @Parameter(description = "Order ID") @PathVariable String orderId) {
         
+        log.info("Received cancel order request: orderId={}", orderId);
         Order cancelledOrder = orderService.cancelOrder(orderId);
+        log.info("Order cancellation processed: orderId={}, status={}", orderId, cancelledOrder.getStatus());
+        
         return ResponseEntity.ok(mapper.toResponse(cancelledOrder));
     }
 }

@@ -41,4 +41,15 @@ public class DomainEventPublisher {
     public void publishAll(Iterable<DomainEvent> events) {
         events.forEach(this::publish);
     }
+    
+    /**
+     * Publish all domain events from an Order aggregate.
+     * This is a convenience method that extracts and publishes events from the aggregate.
+     * 
+     * @param order the order aggregate with pending domain events
+     */
+    public void publishEvents(com.midlevel.orderfulfillment.domain.model.Order order) {
+        publishAll(order.getDomainEvents());
+        order.clearDomainEvents();
+    }
 }

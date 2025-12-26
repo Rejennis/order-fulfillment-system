@@ -2,6 +2,7 @@ package com.midlevel.orderfulfillment.application;
 
 import com.midlevel.orderfulfillment.domain.model.Order;
 import com.midlevel.orderfulfillment.domain.port.NotificationPort;
+import io.micrometer.core.instrument.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -30,9 +31,11 @@ public class NotificationService {
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
     
     private final NotificationPort notificationPort;
+    private final Counter notificationsSentCounter;
     
-    public NotificationService(NotificationPort notificationPort) {
+    public NotificationService(NotificationPort notificationPort, Counter notificationsSentCounter) {
         this.notificationPort = notificationPort;
+        this.notificationsSentCounter = notificationsSentCounter;
     }
     
     /**
@@ -47,6 +50,8 @@ public class NotificationService {
         try {
             log.info("Sending order created notification for order: {}", order.getOrderId());
             notificationPort.sendOrderCreatedNotification(order);
+            notificationsSentCounter.increment();
+            log.debug("Order created notification sent successfully: orderId={}", order.getOrderId());
         } catch (Exception e) {
             // Log error but don't propagate - notification failure shouldn't fail order creation
             log.error("Failed to send order created notification for order: {}", 
@@ -66,6 +71,8 @@ public class NotificationService {
         try {
             log.info("Sending order paid notification for order: {}", order.getOrderId());
             notificationPort.sendOrderPaidNotification(order);
+            notificationsSentCounter.increment();
+            log.debug("Order paid notification sent successfully: orderId={}", order.getOrderId());
         } catch (Exception e) {
             log.error("Failed to send order paid notification for order: {}", 
                     order.getOrderId(), e);
@@ -84,6 +91,8 @@ public class NotificationService {
         try {
             log.info("Sending order shipped notification for order: {}", order.getOrderId());
             notificationPort.sendOrderShippedNotification(order);
+            notificationsSentCounter.increment();
+            log.debug("Order shipped notification sent successfully: orderId={}", order.getOrderId());
         } catch (Exception e) {
             log.error("Failed to send order shipped notification for order: {}", 
                     order.getOrderId(), e);
@@ -102,6 +111,8 @@ public class NotificationService {
         try {
             log.info("Sending order cancelled notification for order: {}", order.getOrderId());
             notificationPort.sendOrderCancelledNotification(order);
+            notificationsSentCounter.increment();
+            log.debug("Order cancelled notification sent successfully: orderId={}", order.getOrderId());
         } catch (Exception e) {
             log.error("Failed to send order cancelled notification for order: {}", 
                     order.getOrderId(), e);

@@ -16,7 +16,9 @@ Maven project configuration file that defines:
 - Dependencies:
   - Spring Boot 3.2.1 (web, data-jpa, validation)
   - PostgreSQL driver
-  - Kafka (spring-kafka, spring-kafka-test) - Day 9 Addition
+  - Kafka (spring-kafka, spring-kafka-test) - Day 9
+  - Observability (actuator, micrometer, logstash) - Day 10
+  - Resilience (spring-retry, resilience4j) - Day 11
   - Testcontainers (PostgreSQL, Kafka)
   - Lombok (reduces boilerplate)
 - Java version (17)
@@ -41,7 +43,7 @@ Maven project configuration file that defines:
     <artifactId>postgresql</artifactId>
 </dependency>
 
-<!-- Kafka (Day 9 Addition) -->
+<!-- Kafka (Day 9) -->
 <dependency>
     <groupId>org.springframework.kafka</groupId>
     <artifactId>spring-kafka</artifactId>
@@ -50,6 +52,41 @@ Maven project configuration file that defines:
     <groupId>org.springframework.kafka</groupId>
     <artifactId>spring-kafka-test</artifactId>
     <scope>test</scope>
+</dependency>
+
+<!-- Observability (Day 10) -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.micrometer</groupId>
+    <artifactId>micrometer-registry-prometheus</artifactId>
+</dependency>
+<dependency>
+    <groupId>net.logstash.logback</groupId>
+    <artifactId>logstash-logback-encoder</artifactId>
+    <version>7.4</version>
+</dependency>
+
+<!-- Error Handling & Resilience (Day 11) -->
+<dependency>
+    <groupId>org.springframework.retry</groupId>
+    <artifactId>spring-retry</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-aop</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.github.resilience4j</groupId>
+    <artifactId>resilience4j-spring-boot3</artifactId>
+    <version>2.1.0</version>
+</dependency>
+<dependency>
+    <groupId>io.github.resilience4j</groupId>
+    <artifactId>resilience4j-micrometer</artifactId>
+    <version>2.1.0</version>
 </dependency>
 ```
 
@@ -1685,4 +1722,355 @@ OrderService → DualEventPublisher → [SpringEventPublisher OR KafkaEventPubli
 - Debug production issues with message replay
 
 For complete details, see DAY_9_SUMMARY.md and KAFKA_QUICKSTART.md.
+
+---
+
+## 📊 Day 10 Additions: Observability & Monitoring
+
+Production systems need visibility into their health and behavior. Day 10 adds comprehensive observability infrastructure.
+
+### New Components Added
+
+**Dependencies:**
+- spring-boot-starter-actuator - Production-ready endpoints
+- micrometer-registry-prometheus - Metrics export
+- logstash-logback-encoder - JSON structured logging
+
+**Configuration:**
+- application.yml - Actuator endpoints, health indicators, metrics config
+- logback-spring.xml - Dual profile logging (dev: human-readable, prod: JSON)
+
+**Infrastructure:**
+- CorrelationIdFilter.java - HTTP filter for request tracing across services
+- MetricsConfiguration.java - 8 custom business metrics beans
+- KafkaHealthIndicator.java - Custom health check for Kafka connectivity
+
+**Enhanced Components:**
+- OrderService.java - Metrics counters and timers on all operations
+- KafkaEventPublisher.java - Event publishing metrics and correlation ID propagation
+- KafkaEventConsumer.java - Event consumption metrics with MDC context
+- OrderController.java - Request/response logging
+- NotificationService.java - Notification metrics
+
+### Observability Capabilities
+
+**Health Checks:**
+- `/actuator/health` - Overall system health (UP/DOWN)
+- Custom Kafka health indicator with 5s timeout
+- Database, disk space, and dependency health checks
+
+**Metrics (Prometheus format):**
+- `/actuator/prometheus` - All metrics in Prometheus format
+- `/actuator/metrics/{metric.name}` - Individual metric details
+
+**Business Metrics:**
+```
+orders.created.total          - Total orders created
+orders.failures.total         - Order operation failures
+orders.status.changes.total   - Status transition count
+orders.creation.duration      - Order creation time (histogram)
+events.published.total        - Events published to Kafka
+events.consumed.total         - Events consumed from Kafka
+events.failures.total         - Event processing failures
+notifications.sent.total      - Notifications sent
+```
+
+**Correlation ID Tracing:**
+- Every request gets a unique correlation ID (X-Correlation-Id header)
+- ID flows through: HTTP → Service → Database → Kafka → Consumers
+- Enables request tracing across distributed components
+- Stored in MDC (Mapped Diagnostic Context) for logging
+
+**Structured Logging:**
+- **Dev profile**: Human-readable console logs with correlation IDs
+- **Prod profile**: JSON logs with all context (timestamp, level, logger, correlationId, etc.)
+- 30-day retention with daily rotation
+- Easy parsing for log aggregation tools (ELK, Splunk)
+
+### Architecture Evolution
+
+**Before (Day 9):**
+```
+Order Creation → Database → Kafka → Notifications
+(No visibility into performance or failures)
+```
+
+**After (Day 10):**
+```
+HTTP Request → CorrelationIdFilter (adds ID)
+    ↓
+OrderController (logs request with correlation ID)
+    ↓
+OrderService (metrics: counter++, timer.record())
+    ↓
+Database (transaction traced with correlation ID)
+    ↓
+KafkaEventPublisher (metrics, correlation ID in headers)
+    ↓
+KafkaEventConsumer (MDC context, metrics)
+    ↓
+NotificationService (metrics)
+```
+
+### Key Benefits
+
+**Debugging:**
+- Trace single request across all components using correlation ID
+- Identify slow operations with timing histograms
+- Find failures with error counters
+
+**Monitoring:**
+- Prometheus scrapes `/actuator/prometheus` for dashboards (Grafana)
+- Alert on high failure rates, slow response times
+- Track business KPIs (orders/hour, event lag)
+
+**Production Readiness:**
+- Health checks for load balancer routing
+- Structured logs for centralized logging (ELK stack)
+- Metrics for capacity planning and SLA tracking
+
+For complete details, see DAY_10_COMPLETION_SUMMARY.md.
+
+---
+
+## 🛡️ Day 11 Additions: Error Handling & Resilience
+
+Production systems must handle failures gracefully. Day 11 adds three critical resilience patterns.
+
+### New Components Added
+
+**Dependencies:**
+- spring-retry - Automatic retry for transient failures
+- spring-boot-starter-aop - Enables @Retryable annotations
+- resilience4j-spring-boot3 - Circuit breaker pattern
+- resilience4j-micrometer - Circuit breaker metrics
+
+**Configuration:**
+- RetryConfiguration.java - Enables @Retryable support
+- CircuitBreakerConfiguration.java - Default circuit breaker config
+
+**Error Handling:**
+- GlobalExceptionHandler.java - Centralized REST API error handling with RFC 7807 Problem Details
+
+**Enhanced Components:**
+- OrderService.java - @Retryable on 4 methods with @Recover fallback
+- KafkaEventPublisher.java - Circuit breaker wrapping for Kafka calls
+
+### Resilience Patterns Implemented
+
+#### 1. Global Exception Handling (RFC 7807 Problem Details)
+
+**Purpose:** Consistent, machine-readable error responses across all endpoints
+
+**Handles:**
+- `OrderNotFoundException` → HTTP 404
+- `IllegalStateException` → HTTP 400 (invalid state transitions)
+- `IllegalArgumentException` → HTTP 400 (invalid input)
+- `MethodArgumentNotValidException` → HTTP 400 (validation errors with field details)
+- Generic `Exception` → HTTP 500 (unexpected errors)
+
+**Error Response Format:**
+```json
+{
+  "type": "https://api.orderfulfillment.com/errors/order-not-found",
+  "title": "Order Not Found",
+  "status": 404,
+  "detail": "Order not found: order-123",
+  "timestamp": "2024-12-26T16:55:00Z"
+}
+```
+
+#### 2. Retry Pattern (Spring Retry)
+
+**Purpose:** Automatic recovery from transient database failures
+
+**Applied to OrderService methods:**
+- `createOrder()` - Order creation
+- `markOrderAsPaid()` - Payment confirmation
+- `markOrderAsShipped()` - Shipping update
+- `cancelOrder()` - Order cancellation
+
+**Retry Strategy:**
+```java
+@Retryable(
+    retryFor = DataAccessException.class,  // Only retry database failures
+    maxAttempts = 3,                        // 1 initial + 2 retries
+    backoff = @Backoff(delay = 1000, multiplier = 2)  // 1s, 2s, 4s
+)
+```
+
+**Recovery Method:**
+```java
+@Recover
+public Order recoverFromCreateOrder(DataAccessException e, Order order) {
+    log.error("All retry attempts exhausted...");
+    throw new RuntimeException("Order creation failed after multiple attempts", e);
+}
+```
+
+**Retries:**
+- Database connection timeouts
+- Optimistic locking conflicts
+- Temporary network issues
+
+**Does NOT retry:**
+- Business rule violations (invalid state transitions)
+- Validation errors (missing required fields)
+- Authorization failures
+
+#### 3. Circuit Breaker Pattern (Resilience4j)
+
+**Purpose:** Prevent cascade failures when Kafka is unavailable
+
+**Circuit Breaker Config:**
+```java
+failureRateThreshold: 50%          // Open after 50% failures
+slowCallRateThreshold: 50%         // Open after 50% slow calls (>5s)
+waitDurationInOpenState: 30s       // Wait before testing recovery
+permittedCallsInHalfOpen: 3        // Test with 3 calls
+minimumNumberOfCalls: 5            // Need 5 calls to calculate rates
+slidingWindowSize: 10              // Track last 10 calls
+```
+
+**State Machine:**
+1. **CLOSED** (normal): All Kafka publish attempts go through
+2. **OPEN** (failure): After 50% failures, fail fast without trying Kafka
+3. **HALF_OPEN** (testing): After 30s, allow 3 test calls
+4. **Back to CLOSED**: If test calls succeed, resume normal operation
+
+**Applied to KafkaEventPublisher:**
+```java
+circuitBreaker.executeRunnable(() -> {
+    kafkaTemplate.send(topic, key, event)
+        .whenComplete((result, ex) -> { /* handle result */ });
+});
+```
+
+**Benefits:**
+- Orders can still be created even if Kafka is down
+- Prevents thread pool exhaustion from waiting on timeouts
+- Automatic recovery testing without manual intervention
+- State transitions logged for observability
+
+### Architecture Evolution
+
+**Before (Day 10):**
+```
+HTTP Request → OrderService → Database (fails on connection timeout)
+                ↓
+           OrderService → Kafka (blocks if Kafka down)
+```
+
+**After (Day 11):**
+```
+HTTP Request → GlobalExceptionHandler wraps everything
+                ↓
+         OrderService with @Retryable (auto-retry DB failures)
+                ↓
+         Database (retries: 1s, 2s, 4s on failure)
+                ↓
+         @Recover fallback if all retries fail
+                ↓
+         KafkaEventPublisher with CircuitBreaker
+                ↓
+         Kafka (fails fast when circuit OPEN, auto-recovers)
+```
+
+### Key Benefits
+
+**Reliability:**
+- Automatic recovery from transient failures (database connection issues)
+- Graceful degradation (orders work even if Kafka is down)
+- Prevents cascade failures (circuit breaker stops trying when system is down)
+
+**User Experience:**
+- Consistent error messages with proper HTTP status codes
+- Field-level validation feedback
+- Fewer user-facing errors from transient issues
+
+**Observability:**
+- Circuit breaker state transitions logged
+- Retry attempts logged with correlation IDs
+- Metrics for failure rates, slow calls, circuit state
+
+**Production Readiness:**
+- Handles database connection pool exhaustion
+- Prevents Kafka unavailability from blocking order processing
+- Industry-standard error format (RFC 7807) for API consumers
+
+For complete details, see DAY_11_SUMMARY.md.
+
+---
+
+## 🎯 Complete System Summary
+
+This Order Fulfillment System now demonstrates:
+- ✅ **Hexagonal Architecture** (Ports & Adapters)
+- ✅ **Domain-Driven Design** (Aggregates, Value Objects, Events)
+- ✅ **Event-Driven Architecture** (Spring Events + Kafka)
+- ✅ **CQRS-lite** (Separate command and query paths)
+- ✅ **Clean Architecture** (Framework-independent domain)
+- ✅ **SOLID Principles** (Especially Dependency Inversion)
+- ✅ **Comprehensive Testing** (Unit, Integration, API tests with Testcontainers)
+- ✅ **Observability** (Metrics, structured logging, correlation IDs, health checks) - Day 10
+- ✅ **Resilience Patterns** (Retry, circuit breaker, global exception handling) - Day 11
+- ✅ **Production-Ready** (Transaction management, error handling, monitoring, failure recovery)
+
+### Complete Request Flow
+
+```
+1. HTTP Request arrives
+   ↓ CorrelationIdFilter (adds X-Correlation-Id)
+   
+2. OrderController (logs request)
+   ↓ GlobalExceptionHandler (wraps for consistent errors)
+   
+3. OrderService (with @Retryable)
+   ↓ Metrics: counter++, timer.record()
+   ↓ Transaction boundary starts
+   
+4. Database Operation
+   ↓ Retry on failure: 1s, 2s, 4s
+   ↓ @Recover fallback if all fail
+   
+5. Transaction commits
+   ↓ Domain events registered
+   
+6. DualEventPublisher (Spring or Kafka)
+   ↓ If Kafka: KafkaEventPublisher
+   ↓ Circuit breaker wrapped
+   ↓ Fail fast if circuit OPEN
+   
+7. Kafka Topic (order.created, etc.)
+   ↓ Persistent, replicated, durable
+   
+8. KafkaEventConsumer
+   ↓ MDC context with correlation ID
+   ↓ Idempotency check
+   ↓ Manual acknowledgment
+   
+9. NotificationService
+   ↓ Async email/SMS
+   ↓ Metrics: notifications.sent.total++
+   
+10. Response to client
+    ↓ Correlation ID in response header
+    ↓ RFC 7807 format on errors
+```
+
+### Observability Endpoints
+
+- **Health**: http://localhost:8080/actuator/health
+- **Metrics**: http://localhost:8080/actuator/prometheus
+- **Kafka UI**: http://localhost:8090 (when Docker running)
+- **PgAdmin**: http://localhost:5050 (when Docker running)
+
+The architecture enables:
+- Fast, isolated unit tests
+- Easy technology swapping (Kafka ↔ Spring Events)
+- Clear separation of concerns
+- Maintainable, scalable codebase
+- Business logic in domain, not scattered across layers
+- Full production observability and resilience
+- Graceful failure handling and automatic recovery
 

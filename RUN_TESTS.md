@@ -1,4 +1,18 @@
-# How to Run Day 9 Integration Tests
+# How to Run Integration Tests
+
+## Why This Document Exists
+
+This guide focuses on **Day 9 integration tests** because that's when comprehensive **Testcontainers-based integration testing** was introduced. Day 9 added Kafka event streaming with full end-to-end testing that requires Docker.
+
+**Previous days** had simpler unit tests that could run with just `mvn test` - no special setup needed.
+
+**Day 9** introduced:
+- Testcontainers (requires Docker)
+- Kafka integration tests
+- End-to-end workflow tests
+- ~13 integration tests that spin up real PostgreSQL and Kafka containers
+
+---
 
 ## Prerequisites
 
@@ -167,20 +181,53 @@ mvn install -DskipTests  # Build without testing
 
 ## What Gets Tested
 
-✅ **Tested:**
-- Kafka event publishing
-- Kafka event consumption
-- REST API integration
-- Database persistence
-- Notification triggering
-- Idempotency
-- Error handling
+### Day 9 Integration Tests (13 tests)
 
-❌ **Not Tested:**
-- Real email sending (mocked)
-- Kafka cluster failover (single broker)
-- Network partitions (requires special setup)
+✅ **Kafka Integration Tests (6 tests):**
+- Event publishing to topics
+- Event consumption by listeners
+- Idempotency handling
+- Error resilience
+- Event ordering per partition
+
+✅ **End-to-End Workflow Tests (7 tests):**
+- REST API → Database → Kafka → Notifications
+- Create, pay, ship, cancel flows
+- Concurrent order processing
+- Idempotency with duplicate events
+
+### Day 10 Observability
+- Unit tests for metrics configuration
+- Health indicator tests
+- No additional Docker requirements
+
+### Day 11 Resilience
+- Retry pattern (tested via existing tests with failure injection)
+- Circuit breaker (tested via existing tests with Kafka unavailability)
+- Exception handler (tested via REST API tests)
+- Future: ResilienceIntegrationTest.java
+
+### Earlier Days (Unit Tests)
+- Domain model validation (Order, OrderItem, Money)
+- Service layer logic
+- Repository tests with H2 in-memory database
+- **No Docker required** - simple `mvn test` works
 
 ---
 
-**Summary:** Run `mvn test` with Docker running to verify Day 9 completion.
+## Summary
+
+**RUN_TESTS.md exists specifically for Day 9** because that's when integration testing became complex enough to require documentation. 
+
+**Key differences by day:**
+- **Days 1-8**: Simple unit tests, no Docker needed
+- **Day 9**: Integration tests with Testcontainers + Docker required ← This document
+- **Days 10-11**: Enhanced observability and resilience, tested via Day 9's infrastructure
+
+**To run everything:** `mvn test` (with Docker running for Day 9 tests)
+
+**To skip integration tests:** `mvn test -DskipTests=*IntegrationTest`
+
+---
+
+**Summary:** Run `mvn test` with Docker running to verify Day 9+ completion.

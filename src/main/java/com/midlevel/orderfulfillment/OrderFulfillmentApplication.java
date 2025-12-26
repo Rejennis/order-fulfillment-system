@@ -2,6 +2,7 @@ package com.midlevel.orderfulfillment;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 /**
  * Main entry point for the Order Fulfillment System application.
@@ -11,12 +12,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * - @EnableAutoConfiguration: Enables Spring Boot's auto-configuration
  * - @ComponentScan: Scans for components in this package and sub-packages
  * 
+ * @EnableJpaAuditing (Day 12):
+ * - Enables automatic population of @CreatedDate and @LastModifiedDate fields
+ * - Used by User entity for audit timestamps
+ * 
  * This class demonstrates the "Convention over Configuration" principle:
  * - Spring Boot auto-configures based on dependencies in classpath
  * - Minimal configuration needed to get started
  * - Can be customized as needed for production
  */
 @SpringBootApplication
+@EnableJpaAuditing
 public class OrderFulfillmentApplication {
     
     /**

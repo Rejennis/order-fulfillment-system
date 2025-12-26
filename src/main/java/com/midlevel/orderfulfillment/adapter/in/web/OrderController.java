@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +26,8 @@ import java.util.stream.Collectors;
  * 
  * IMPLEMENTATION TIMELINE:
  * - Implemented in Day 3 (Should have been Day 5: REST API & HTTP Semantics)
+ * - Enhanced with observability in Day 10 (logging)
+ * - Secured with role-based authorization in Day 12
  * 
  * Hexagonal Architecture (Ports & Adapters):
  * This is an "inbound adapter" (driving adapter) that:
@@ -39,7 +42,15 @@ import java.util.stream.Collectors;
  * - Input validation (@Valid)
  * - DTO ↔ Domain mapping
  * - HTTP status codes
+ * - Authorization (@PreAuthorize)
  * - Exception handling (via @ControllerAdvice, see below)
+ * 
+ * Security (Day 12):
+ * - All endpoints require authentication (configured in SecurityConfiguration)
+ * - Role-based authorization with @PreAuthorize:
+ *   - ROLE_CUSTOMER: Can create and view orders
+ *   - ROLE_WAREHOUSE_STAFF: Can ship orders
+ *   - ROLE_ADMIN: Full access to all operations
  * 
  * What NOT to put here:
  * - Business logic (that's in Order domain)
@@ -67,12 +78,17 @@ public class OrderController {
      * POST /api/orders
      * Request body: CreateOrderRequest (JSON)
      * Response: 201 Created with OrderResponse
+     * 
+     * Authorization: ROLE_CUSTOMER or ROLE_ADMIN
      */
     @PostMapping
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     @Operation(summary = "Create a new order", description = "Creates a new order with the provided items and shipping address")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Order created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid request - validation errors"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<OrderResponse> createOrder(
@@ -102,12 +118,16 @@ public class OrderController {
      * 
      * GET /api/orders/{orderId}
      * Response: 200 OK with OrderResponse, or 404 Not Found
+     * 
+     * Authorization: ROLE_CUSTOMER or ROLE_ADMIN
      */
     @GetMapping("/{orderId}")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     @Operation(summary = "Get order by ID", description = "Retrieves an order by its unique identifier")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Order found"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
     })
     public ResponseEntity<OrderResponse> getOrder(
             @Parameter(description = "Order ID") @PathVariable String orderId) {
@@ -123,8 +143,11 @@ public class OrderController {
      * 
      * GET /api/orders?customerId={customerId}
      * Response: 200 OK with list of OrderResponse
+     * 
+     * Authorization: ROLE_CUSTOMER or ROLE_ADMIN
      */
     @GetMapping
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     @Operation(summary = "Get orders by customer", description = "Retrieves all orders for a specific customer")
     @ApiResponse(responseCode = "200", description = "Orders retrieved successfully")
     public ResponseEntity<List<OrderResponse>> getOrdersByCustomer(
@@ -144,9 +167,12 @@ public class OrderController {
      * GET /api/orders/all
      * Response: 200 OK with list of all orders
      * 
+     * Authorization: ROLE_ADMIN only
+     * 
      * Note: In production, this should be paginated to avoid loading too much data.
      */
     @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all orders", description = "Retrieves all orders (should be paginated in production)")
     @ApiResponse(responseCode = "200", description = "Orders retrieved successfully")
     public ResponseEntity<List<OrderResponse>> getAllOrders() {
@@ -163,8 +189,11 @@ public class OrderController {
      * 
      * POST /api/orders/{orderId}/pay
      * Response: 200 OK with updated OrderResponse
+     * 
+     * Authorization: ROLE_CUSTOMER or ROLE_ADMIN
      */
     @PostMapping("/{orderId}/pay")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     @Operation(summary = "Mark order as paid", description = "Transitions the order to PAID status")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Order marked as paid"),
@@ -186,8 +215,11 @@ public class OrderController {
      * 
      * POST /api/orders/{orderId}/ship
      * Response: 200 OK with updated OrderResponse
+     * 
+     * Authorization: ROLE_WAREHOUSE_STAFF or ROLE_ADMIN
      */
     @PostMapping("/{orderId}/ship")
+    @PreAuthorize("hasAnyRole('WAREHOUSE_STAFF', 'ADMIN')")
     @Operation(summary = "Mark order as shipped", description = "Transitions the order to SHIPPED status (must be paid first)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Order marked as shipped"),
@@ -209,8 +241,11 @@ public class OrderController {
      * 
      * POST /api/orders/{orderId}/cancel
      * Response: 200 OK with updated OrderResponse
+     * 
+     * Authorization: ROLE_CUSTOMER or ROLE_ADMIN
      */
     @PostMapping("/{orderId}/cancel")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     @Operation(summary = "Cancel order", description = "Transitions the order to CANCELLED status (cannot cancel shipped orders)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Order cancelled"),

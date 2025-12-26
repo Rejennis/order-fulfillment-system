@@ -214,3 +214,15 @@ server:
     include-message: always
     # Include stack trace in error response (disable in production)
     include-stacktrace: on_param
+
+# Security configuration (Day 12)
+security:
+  jwt:
+    # JWT secret key - MUST be at least 256 bits (32 characters) for HS256
+    # IMPORTANT: In production, use environment variable: ${JWT_SECRET}
+    # Generate with: openssl rand -base64 32
+    secret: ${JWT_SECRET:ThisIsAVerySecureSecretKeyForJWTTokenGenerationAndValidationPleaseChangeInProduction}
+    
+    # Token expiration time in milliseconds
+    # 86400000 ms = 24 hours
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}

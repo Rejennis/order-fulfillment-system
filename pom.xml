@@ -291,6 +291,54 @@
             <version>2.1.0</version>
         </dependency>
         
+        <!-- 
+            ========================================
+            SECURITY & AUTHENTICATION (DAY 12)
+            ========================================
+        -->
+        
+        <!-- 
+            Spring Security - Security framework for authentication and authorization
+            Provides comprehensive security services for Java applications
+            Includes form login, HTTP Basic, JWT support, method security
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        
+        <!-- 
+            JJWT API - JSON Web Token API for Java
+            Core JWT library for creating and parsing JWTs
+        -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.12.3</version>
+        </dependency>
+        
+        <!-- 
+            JJWT Implementation - Runtime implementation of JJWT API
+            Required at runtime for JWT operations
+        -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.12.3</version>
+            <scope>runtime</scope>
+        </dependency>
+        
+        <!-- 
+            JJWT Jackson - JSON processing for JWT
+            Enables JWT serialization/deserialization with Jackson
+        -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.12.3</version>
+            <scope>runtime</scope>
+        </dependency>
+        
     </dependencies>
 
     <!-- 

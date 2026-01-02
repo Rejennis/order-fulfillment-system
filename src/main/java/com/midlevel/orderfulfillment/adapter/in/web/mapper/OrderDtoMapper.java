@@ -21,10 +21,22 @@ import java.util.stream.Collectors;
  * 3. Flexibility: Easy to add different mappings for different API versions
  * 4. Single Responsibility: Each class focuses on one thing
  * 
+ * Day 13: Added `CreateOrderInput` and `toInput(...)` to support the stricter
+ * layering—controllers pass inputs and the service constructs aggregates.
+ * 
  * Alternative: Could use MapStruct for automatic mapping generation
  */
 @Component
 public class OrderDtoMapper {
+    /**
+     * Immutable input for service-level order creation.
+     * Keeps controllers thin by avoiding direct aggregate construction.
+     */
+    public record CreateOrderInput(
+            String customerId,
+            java.util.List<OrderItem> items,
+            Address shippingAddress
+    ) {}
     
     /**
      * Convert CreateOrderRequest DTO to domain Order.
@@ -45,6 +57,24 @@ public class OrderDtoMapper {
                 address
         );
     }
+
+        /**
+         * Convert CreateOrderRequest DTO to inputs for service orchestration
+         * without constructing the domain aggregate in the web layer.
+         */
+        public CreateOrderInput toInput(CreateOrderRequest request) {
+        var items = request.items().stream()
+            .map(this::toOrderItem)
+            .collect(Collectors.toList());
+
+        Address address = toAddress(request.shippingAddress());
+
+        return new CreateOrderInput(
+            request.customerId(),
+            items,
+            address
+        );
+        }
     
     /**
      * Convert domain Order to OrderResponse DTO.

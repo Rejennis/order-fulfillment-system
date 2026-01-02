@@ -1,10 +1,8 @@
 package com.midlevel.orderfulfillment.application;
 
-import com.midlevel.orderfulfillment.domain.model.Order;
-import com.midlevel.orderfulfillment.domain.model.OrderStatus;
-import com.midlevel.orderfulfillment.domain.port.OrderRepository;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Timer;
+import java.util.List;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -14,8 +12,14 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import com.midlevel.orderfulfillment.domain.model.Address;
+import com.midlevel.orderfulfillment.domain.model.Order;
+import com.midlevel.orderfulfillment.domain.model.OrderItem;
+import com.midlevel.orderfulfillment.domain.model.OrderStatus;
+import com.midlevel.orderfulfillment.domain.port.OrderRepository;
+
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Timer;
 
 /**
  * Application Service for orchestrating Order operations.
@@ -24,6 +28,8 @@ import java.util.Optional;
  * - Basic CRUD operations: Implemented in Day 3 (Should have been Day 5: REST API)
  * - Event publishing integration: Added in Day 4 (Actually Day 7: Domain Events)
  * - Observability (metrics, structured logging): Added in Day 10
+ * - Stricter layering adopted: Day 13 — controllers now call service,
+ *   and the service delegates to domain factory `Order.create(...)` for invariants.
  * 
  * What is an Application Service?
  * - Sits between Controllers (adapters) and Domain (core business logic)
@@ -72,6 +78,46 @@ public class OrderService {
     }
     
     /**
+     * Create and save a new order by delegating construction to the domain factory.
+     *
+     * This method demonstrates proper layering: the application service orchestrates
+     * the use case and persistence, while the domain aggregate (`Order`) enforces
+     * invariants via its `create(...)` factory.
+     *
+     * Observability and resilience mirror the existing `createOrder(Order order)` method.
+     */
+    @Transactional  // Write operation - overrides read-only
+    @Retryable(
+        retryFor = DataAccessException.class,
+        maxAttempts = 3,
+        backoff = @Backoff(delay = 1000, multiplier = 2)
+    )
+    public Order createOrder(String customerId, List<OrderItem> items, Address shippingAddress) {
+        log.info("Creating order for customer: {}, items: {}", customerId, items.size());
+
+        return orderCreationTimer.record(() -> {
+            try {
+                // Delegate construction to the domain aggregate factory
+                Order newOrder = Order.create(customerId, items, shippingAddress);
+
+                // Persist and publish events after successful save
+                Order savedOrder = orderRepository.save(newOrder);
+                eventPublisher.publishEvents(savedOrder);
+
+                ordersCreatedCounter.increment();
+                log.info("Order created successfully: orderId={}, customerId={}, totalAmount={}",
+                        savedOrder.getId(), savedOrder.getCustomerId(), savedOrder.getTotalAmount());
+
+                return savedOrder;
+            } catch (Exception e) {
+                orderFailuresCounter.increment();
+                log.error("Failed to create order for customer: {}", customerId, e);
+                throw e;
+            }
+        });
+    }
+
+    /**
      * Create and save a new order.
      * 
      * Transaction management:
@@ -103,7 +149,10 @@ public class OrderService {
         return orderCreationTimer.record(() -> {
             try {
                 // Domain validation already happened in Order.create()
-                // Service just orchestrates the save operation
+                // Service just orchestrates the save operation.
+                // NOTE (Day 13): Prefer using the overload that accepts
+                // primitives/value objects and calls `Order.create(...)` internally,
+                // to keep adapters/controllers from constructing aggregates directly.
                 Order savedOrder = orderRepository.save(order);
                 
                 // Publish domain events after successful save

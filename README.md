@@ -48,6 +48,7 @@ CANCELLED (possible from any state before SHIPPED)
 ```
 
 **Core Capabilities:**
+
 - ✅ Create orders with multiple line items and shipping addresses
 - ✅ Process payments with idempotency guarantees
 - ✅ Track shipment and delivery status
@@ -59,6 +60,7 @@ CANCELLED (possible from any state before SHIPPED)
 ## ✨ Key Features
 
 ### Domain Model (DDD)
+
 - **Order Aggregate** with enforced state machine transitions
 - **Value Objects** (Money, OrderItem, Address) for type safety
 - **Business Rule Validation** at the domain level (not in controllers)
@@ -66,6 +68,7 @@ CANCELLED (possible from any state before SHIPPED)
 - **Domain Events** (OrderCreated, OrderPaid, OrderShipped, etc.)
 
 ### REST API
+
 - RESTful endpoints following HTTP semantics
 - Proper status codes (200, 201, 400, 401, 403, 404, 409, 500)
 - Request/response DTOs separate from domain models
@@ -74,6 +77,7 @@ CANCELLED (possible from any state before SHIPPED)
 - OpenAPI/Swagger documentation
 
 ### Event-Driven Architecture
+
 - **Domain Events** published on aggregate state changes
 - **Kafka Integration** for reliable, scalable event streaming
 - **Event Listeners** for notifications and auditing
@@ -82,6 +86,7 @@ CANCELLED (possible from any state before SHIPPED)
 - **Retry Logic** with exponential backoff
 
 ### Persistence
+
 - **PostgreSQL** for reliable transactional data storage
 - **JPA/Hibernate** with optimized queries (no N+1 issues)
 - **Testcontainers** for integration testing with real database
@@ -90,6 +95,7 @@ CANCELLED (possible from any state before SHIPPED)
 - **Auditing** with @CreatedDate and @LastModifiedDate
 
 ### Notifications
+
 - **Port/Adapter Pattern** for pluggable notification providers
 - **Async Processing** with @Async and dedicated thread pools
 - **Email Notifications** (mock implementation, production-ready interface)
@@ -97,6 +103,7 @@ CANCELLED (possible from any state before SHIPPED)
 - **Kafka-Based Notifications** for reliability and scalability
 
 ### Observability
+
 - **Structured Logging** (JSON format with MDC correlation IDs)
 - **Metrics** with Micrometer (Prometheus format)
 - **Health Checks** for all dependencies (database, Kafka)
@@ -105,6 +112,7 @@ CANCELLED (possible from any state before SHIPPED)
 - **Custom Metrics** for business events (order counts, failures)
 
 ### Resilience
+
 - **Global Exception Handling** with @RestControllerAdvice
 - **Retry Logic** with Spring Retry and @Retryable
 - **Circuit Breaker** with Resilience4j for external dependencies
@@ -113,6 +121,7 @@ CANCELLED (possible from any state before SHIPPED)
 - **Idempotency** for payment operations
 
 ### Security
+
 - **JWT Authentication** with token-based auth
 - **Role-Based Authorization** (ADMIN, USER roles) with @PreAuthorize
 - **BCrypt Password Hashing** for user credentials
@@ -121,6 +130,7 @@ CANCELLED (possible from any state before SHIPPED)
 - **CORS Configuration** for frontend integration
 
 ### DevOps
+
 - **Multi-Stage Dockerfile** (~250MB optimized image, Alpine-based)
 - **Docker Compose** for full stack local deployment (6 services)
 - **GitHub Actions CI/CD** with 4-job pipeline (build, quality, docker, summary)
@@ -290,6 +300,7 @@ Full Architecture Decision Records (ADRs) are available in [docs/architecture/](
 ## 🛠️ Technology Stack
 
 ### Core Framework
+
 - **Java 17** - Modern LTS with records, pattern matching, text blocks
 - **Spring Boot 3.2.1** - Dependency injection, auto-configuration
 - **Spring Data JPA** - Repository abstraction, query methods
@@ -297,22 +308,26 @@ Full Architecture Decision Records (ADRs) are available in [docs/architecture/](
 - **Spring Security 6** - Authentication and authorization
 
 ### Data & Persistence
+
 - **PostgreSQL 16** - Relational database for transactional data
 - **Hibernate 6.4** - ORM implementation
 - **HikariCP** - High-performance connection pooling
 - **Flyway** - Database schema migrations (ready for use)
 
 ### Messaging & Events
+
 - **Spring Kafka 3.1** - Kafka integration with Spring
 - **Apache Kafka 7.5** - Distributed event streaming platform
 - **Spring Events** - In-process event publishing
 
 ### Security
+
 - **Spring Security 6** - Authentication and authorization framework
 - **JWT (JJWT 0.12)** - Token-based authentication
 - **BCrypt** - Secure password hashing
 
 ### Testing
+
 - **JUnit 5** - Unit testing framework
 - **Mockito 5** - Mocking framework for unit tests
 - **AssertJ** - Fluent assertion library
@@ -321,16 +336,19 @@ Full Architecture Decision Records (ADRs) are available in [docs/architecture/](
 - **H2** - In-memory database for unit tests
 
 ### Observability
+
 - **Micrometer 1.12** - Metrics collection and export
 - **Prometheus** - Metrics format and storage
 - **SLF4J + Logback** - Structured logging with MDC
 - **Spring Boot Actuator** - Health checks, metrics endpoints
 
 ### Resilience
+
 - **Resilience4j** - Circuit breaker, retry, rate limiter
 - **Spring Retry** - Declarative retry support
 
 ### DevOps & Build Tools
+
 - **Maven 3.9.6** - Build automation and dependency management
 - **Docker 24** - Containerization
 - **Docker Compose** - Multi-container orchestration
@@ -430,9 +448,10 @@ LOGGING_LEVEL_COM_MIDLEVEL=DEBUG
 
 Once the application is running, access interactive API documentation:
 
-**http://localhost:8080/swagger-ui.html**
+**<http://localhost:8080/swagger-ui.html>**
 
 The Swagger UI provides:
+
 - Complete endpoint documentation
 - Request/response schemas
 - Try-it-out functionality
@@ -781,6 +800,7 @@ docker-compose down
 ### Kubernetes Deployment (Future)
 
 Sample Kubernetes manifests are planned for:
+
 - Deployment with 3 replicas
 - Service (LoadBalancer)
 - ConfigMap for configuration
@@ -804,6 +824,7 @@ Use Spring profiles for different environments:
 ```
 
 Configuration files:
+
 - `application.yml` - Default configuration
 - `application-dev.yml` - Development overrides
 - `application-prod.yml` - Production overrides
@@ -885,6 +906,7 @@ Example log entry:
 ### Distributed Tracing (Planned)
 
 Future integration with:
+
 - **Zipkin** or **Jaeger** for distributed tracing
 - **Spring Cloud Sleuth** for trace/span ID propagation
 - **OpenTelemetry** for vendor-neutral observability
@@ -915,6 +937,7 @@ This project was built over 14 days as part of the "Be Prolific - Gulp Life" Mid
 ### Key Learnings
 
 See [docs/retrospective.md](docs/retrospective.md) for detailed retrospective including:
+
 - What went well
 - Challenges faced
 - Key technical learnings

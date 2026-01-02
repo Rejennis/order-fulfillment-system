@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.Currency;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -147,10 +148,10 @@ class OrderDomainEventsTest {
     
     private OrderItem createOrderItem() {
         return OrderItem.create(
-                "PROD-001",
-                "Test Product",
-                new Money(new BigDecimal("99.99"), "USD"),
-                1
+            "PROD-001",
+            "Test Product",
+            Money.usd(new BigDecimal("99.99")),
+            1
         );
     }
     

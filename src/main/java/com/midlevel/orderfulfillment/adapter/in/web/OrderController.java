@@ -32,8 +32,8 @@ import java.util.stream.Collectors;
  * Hexagonal Architecture (Ports & Adapters):
  * This is an "inbound adapter" (driving adapter) that:
  * - Receives HTTP requests from clients
- * - Converts DTOs to domain models
- * - Calls the application service (use case)
+ * - Converts DTOs to value objects/inputs
+ * - Calls the application service (use case) which constructs aggregates
  * - Converts domain models back to DTOs
  * - Returns HTTP responses
  * 
@@ -97,11 +97,15 @@ public class OrderController {
         log.info("Received create order request: customerId={}, itemCount={}", 
                 request.customerId(), request.items() != null ? request.items().size() : 0);
         
-        // Convert DTO to domain model
-        Order order = mapper.toDomain(request);
+        // Map DTO to service inputs (no aggregate construction in controller)
+        OrderDtoMapper.CreateOrderInput input = mapper.toInput(request);
         
-        // Execute business operation
-        Order savedOrder = orderService.createOrder(order);
+        // Execute business operation via service orchestration
+        Order savedOrder = orderService.createOrder(
+                input.customerId(),
+                input.items(),
+                input.shippingAddress()
+        );
         
         // Convert domain model to response DTO
         OrderResponse response = mapper.toResponse(savedOrder);

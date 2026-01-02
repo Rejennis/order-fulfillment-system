@@ -100,6 +100,21 @@ Expected flow:
 
 ---
 
+### Kafka Flow: Step-to-Package Mapping
+
+Map each step in the flow to the package responsible in the codebase:
+
+- Order created and saved: `com.midlevel.orderfulfillment.application` (`OrderService`) and `com.midlevel.orderfulfillment.adapter.out.persistence` (JPA repositories)
+- Event publishing (after commit): `com.midlevel.orderfulfillment.application.DomainEventPublisher`
+- Kafka producer (send to topic): `com.midlevel.orderfulfillment.adapter.out.messaging.KafkaEventPublisher`
+- Kafka consumer (receive from topic): `com.midlevel.orderfulfillment.adapter.out.messaging.KafkaEventConsumer` (aka `KafkaEventListener`)
+- Notification handling (email/log): `com.midlevel.orderfulfillment.adapter.out.notification.EmailNotificationAdapter`
+- Kafka topics/config: `com.midlevel.orderfulfillment.config.KafkaConfig`
+
+Notes:
+- Depending on configuration (`events.publisher: spring | kafka`), events are published via Spring in-process events or Kafka.
+- Class names may appear as `KafkaEventListener` in documentation; in code they reside under `adapter.out.messaging`.
+
 ### 5. Monitor Events
 
 #### View Events in Kafka UI
